@@ -5,7 +5,7 @@ function createBot() {
     host: process.env.SERVER_IP,
     port: parseInt(process.env.SERVER_PORT || '25565'),
     username: 'IronFarm_Bot',
-    version: '26.3' // 直接指定 26.3
+    version: '1.21.1' 
   });
 
   bot.on('spawn', () => {
