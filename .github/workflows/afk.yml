@@ -1,27 +1,38 @@
-name: Run MC AFK Bot
+name: 24/7 AFK Bot
 
 on:
-  workflow_dispatch:
   schedule:
     - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 jobs:
-  run-bot:
+  afk:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install mineflayer
 
-      - name: Run Bot
+      - name: Run Bot (Max 5.5 Hours)
         env:
           SERVER_IP: ${{ secrets.SERVER_IP }}
           SERVER_PORT: ${{ secrets.SERVER_PORT }}
-        run: timeout 5.8h node bot.js || true
+        # 設定執行 5.5 小時 (330 分鐘) 後自動結束，避開 6 小時強制關閉
+        run: timeout 330m node bot.js || true
+
+      - name: Trigger Next Workflow (無縫接軌)
+        # 當這次掛機結束時，自動打 API 觸發下一輪，完全不留空白期
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GH_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/afk.yml/dispatches \
+            -d '{"ref":"main"}'
+        continue-on-error: true
