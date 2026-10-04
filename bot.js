@@ -20,10 +20,11 @@ function createAFKBot(botUsername, delay) {
 
       bot.once('spawn', () => {
         console.log(`🟢 [${botUsername}] 已成功進入伺服器！`);
-        // 暫停重力避免落下觸發檢測
+        
+        // 1. 進場關閉物理，避免掉落被判定非法移動
         bot.physicsEnabled = false;
 
-        // 每 100ms 微幅旋轉視角，發送 active client tick 封包
+        // 2. 每 0.1 秒微幅旋轉視角，持續發送控制封包給伺服器
         timer = setInterval(() => {
           if (bot && bot.entity) {
             bot.look(bot.entity.yaw + 0.001, bot.entity.pitch, true);
@@ -51,6 +52,6 @@ function createAFKBot(botUsername, delay) {
   }, delay);
 }
 
-// 啟動兩隻機器人（間隔 10 秒錯開進入）
+// 啟動兩隻機器人（錯開 10 秒進場）
 createAFKBot('AFK_Bot_1', 0);
 createAFKBot('AFK_Bot_2', 10000);
