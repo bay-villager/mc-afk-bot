@@ -3,70 +3,54 @@ const mineflayer = require('mineflayer');
 const serverHost = 'baystellardynasty.aternos.me';
 const serverPort = 45295;
 
-// 第隻機器人
-function startBot1() {
-  console.log('[AFK_Bot_1] 正在嘗試連線伺服器...');
-  const bot1 = mineflayer.createBot({
-    host: serverHost,
-    port: serverPort,
-    username: 'AFK_Bot_1',
-    auth: 'offline',
-    version: false
-  });
+function createAFKBot(botUsername, delay) {
+  setTimeout(() => {
+    function start() {
+      console.log(`[${botUsername}] 正在嘗試連線伺服器...`);
+      
+      const bot = mineflayer.createBot({
+        host: serverHost,
+        port: serverPort,
+        username: botUsername,
+        auth: 'offline',
+        version: false
+      });
 
-  bot1.once('spawn', () => {
-    console.log('🟢 [AFK_Bot_1] 已成功進入伺服器！');
-  });
+      let timer = null;
 
-  bot1.on('kicked', (reason) => {
-    console.log('⚠️ [AFK_Bot_1] 被伺服器踢出:', JSON.stringify(reason));
-  });
+      bot.once('spawn', () => {
+        console.log(`🟢 [${botUsername}] 已成功進入伺服器！`);
+        // 暫停重力避免落下觸發檢測
+        bot.physicsEnabled = false;
 
-  bot1.on('error', (err) => {
-    console.log('❌ [AFK_Bot_1] 錯誤:', err.message);
-  });
+        // 每 100ms 微幅旋轉視角，發送 active client tick 封包
+        timer = setInterval(() => {
+          if (bot && bot.entity) {
+            bot.look(bot.entity.yaw + 0.001, bot.entity.pitch, true);
+          }
+        }, 100);
+      });
 
-  bot1.once('end', (reason) => {
-    console.log(`🔴 [AFK_Bot_1] 斷線 (${reason})，15 秒後重連...`);
-    bot1.removeAllListeners();
-    setTimeout(startBot1, 15000);
-  });
+      bot.on('kicked', (reason) => {
+        console.log(`⚠️ [${botUsername}] 被伺服器踢出:`, JSON.stringify(reason));
+      });
+
+      bot.on('error', (err) => {
+        console.log(`❌ [${botUsername}] 錯誤:`, err.message);
+      });
+
+      bot.once('end', (reason) => {
+        if (timer) clearInterval(timer);
+        console.log(`🔴 [${botUsername}] 斷線 (${reason})，15 秒後重連...`);
+        bot.removeAllListeners();
+        setTimeout(start, 15000);
+      });
+    }
+
+    start();
+  }, delay);
 }
 
-// 第二隻機器人
-function startBot2() {
-  console.log('[AFK_Bot_2] 正在嘗試連線伺服器...');
-  const bot2 = mineflayer.createBot({
-    host: serverHost,
-    port: serverPort,
-    username: 'AFK_Bot_2',
-    auth: 'offline',
-    version: false
-  });
-
-  bot2.once('spawn', () => {
-    console.log('🟢 [AFK_Bot_2] 已成功進入伺服器！');
-  });
-
-  bot2.on('kicked', (reason) => {
-    console.log('⚠️ [AFK_Bot_2] 被伺服器踢出:', JSON.stringify(reason));
-  });
-
-  bot2.on('error', (err) => {
-    console.log('❌ [AFK_Bot_2] 錯誤:', err.message);
-  });
-
-  bot2.once('end', (reason) => {
-    console.log(`🔴 [AFK_Bot_2] 斷線 (${reason})，15 秒後重連...`);
-    bot2.removeAllListeners();
-    setTimeout(startBot2, 15000);
-  });
-}
-
-// 啟動第一隻
-startBot1();
-
-// 10 秒後啟動第二隻（錯開進場）
-setTimeout(() => {
-  startBot2();
-}, 10000);
+// 啟動兩隻機器人（間隔 10 秒錯開進入）
+createAFKBot('AFK_Bot_1', 0);
+createAFKBot('AFK_Bot_2', 10000);
