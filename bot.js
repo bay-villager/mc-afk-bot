@@ -16,20 +16,20 @@ function createAFKBot(botUsername, delay) {
         version: false
       });
 
-      let timer = null;
+      let antiKickTimer = null;
 
       bot.once('spawn', () => {
         console.log(`🟢 [${botUsername}] 已成功進入伺服器！`);
         
-        // 1. 進場關閉物理，避免掉落被判定非法移動
-        bot.physicsEnabled = false;
+        // 確保物理模擬開啟，讓客戶端正常計算地心引力與位置封包
+        bot.physicsEnabled = true;
 
-        // 2. 每 0.1 秒微幅旋轉視角，持續發送控制封包給伺服器
-        timer = setInterval(() => {
+        // 每 3 秒微幅轉動角度 + 輕微擺頭，告訴 Purpur 這是一個活躍的真客戶端
+        antiKickTimer = setInterval(() => {
           if (bot && bot.entity) {
-            bot.look(bot.entity.yaw + 0.001, bot.entity.pitch, true);
+            bot.look(bot.entity.yaw + 0.1, bot.entity.pitch, true);
           }
-        }, 100);
+        }, 3000);
       });
 
       bot.on('kicked', (reason) => {
@@ -41,7 +41,7 @@ function createAFKBot(botUsername, delay) {
       });
 
       bot.once('end', (reason) => {
-        if (timer) clearInterval(timer);
+        if (antiKickTimer) clearInterval(antiKickTimer);
         console.log(`🔴 [${botUsername}] 斷線 (${reason})，15 秒後重連...`);
         bot.removeAllListeners();
         setTimeout(start, 15000);
@@ -52,6 +52,6 @@ function createAFKBot(botUsername, delay) {
   }, delay);
 }
 
-// 啟動兩隻機器人（錯開 10 秒進場）
+// 啟動兩隻機器人（錯開 10 秒進場避免 Aternos 防刷連線）
 createAFKBot('AFK_Bot_1', 0);
 createAFKBot('AFK_Bot_2', 10000);
