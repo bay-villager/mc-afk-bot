@@ -1,9 +1,10 @@
 {
   "name": "mc-afk-bot",
   "version": "1.0.0",
+  "description": "AFK Bot for Minecraft",
   "main": "bot.js",
   "dependencies": {
-    "mineflayer": "latest"
+    "mineflayer": "latest",
     "minecraft-protocol": "latest"
   }
 }
