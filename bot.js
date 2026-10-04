@@ -16,10 +16,15 @@ function createBot(username, delay) {
         version: false
       });
 
+      // 關鍵修復：收到伺服器的定位請求時立刻回應，避免 1 秒被踢
+      bot._client.on('position', (packet) => {
+        bot._client.write('teleport_confirm', { teleportId: packet.teleportId });
+      });
+
       bot.once('spawn', () => {
         console.log(`🟢 [${username}] 已成功進入伺服器！`);
-        // 必須讓物理維持開啟，否則伺服器收不到客戶端物理封包會直接踢人
-        bot.physicsEnabled = true;
+        // 關閉客戶端物理運算，完全交由伺服器決定位置
+        bot.physicsEnabled = false;
       });
 
       bot.on('kicked', (reason) => {
@@ -41,6 +46,6 @@ function createBot(username, delay) {
   }, delay);
 }
 
-// 啟動兩隻機器人（間隔 10 秒錯開進入）
+// 啟動兩隻機器人（間隔 10 秒）
 createBot('AFK_Bot_1', 0);
 createBot('AFK_Bot_2', 10000);
