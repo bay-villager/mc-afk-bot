@@ -13,18 +13,22 @@ function createBot(username, delay) {
         port: serverPort,
         username: username,
         auth: 'offline',
-        version: false
-      });
-
-      // 關鍵修復：收到伺服器的定位請求時立刻回應，避免 1 秒被踢
-      bot._client.on('position', (packet) => {
-        bot._client.write('teleport_confirm', { teleportId: packet.teleportId });
+        version: '1.21' // 強制指定 1.21 版本 protocol
       });
 
       bot.once('spawn', () => {
         console.log(`🟢 [${username}] 已成功進入伺服器！`);
-        // 關閉客戶端物理運算，完全交由伺服器決定位置
-        bot.physicsEnabled = false;
+      });
+
+      // 關鍵修復：針對 Purpur 1.21 強制每 tick (50ms) 發送一次 client_tick_end 封包
+      bot.on('physicsTick', () => {
+        if (bot._client && bot._client.write) {
+          try {
+            bot._client.write('client_tick_end', {});
+          } catch (e) {
+            // 忽略封包發送失敗
+          }
+        }
       });
 
       bot.on('kicked', (reason) => {
@@ -46,6 +50,6 @@ function createBot(username, delay) {
   }, delay);
 }
 
-// 啟動兩隻機器人（間隔 10 秒）
+// 啟動兩隻機器人
 createBot('AFK_Bot_1', 0);
 createBot('AFK_Bot_2', 10000);
