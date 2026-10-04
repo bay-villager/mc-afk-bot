@@ -1,47 +1,43 @@
 const mineflayer = require('mineflayer');
 
-function createBot(botName, delay) {
-  setTimeout(() => {
-    function start() {
-      const bot = mineflayer.createBot({
-        host: process.env.SERVER_IP,
-        port: parseInt(process.env.SERVER_PORT || '25565'),
-        username: botName,
-        version: '1.20.1',
-        checkTimeoutInterval: 60 * 1000,
-        physicsEnabled: false
-      });
+// 定義伺服器資訊
+const serverHost = 'baystellardynasty.aternos.me';
+const serverPort = 45295;
 
-      bot.on('spawn', () => {
-        console.log(`[${botName}] 已成功進服！`);
+// 要啟動的機器人名稱清單
+const botNames = ['AFK_Bot_1', 'AFK_Bot_2'];
 
-        // 每 30 秒隨機改變視線角度 (Yaw/Pitch)，完美避開 Aternos 的 AFK 檢測
-        setInterval(() => {
-          if (bot.entity) {
-            const yaw = (Math.random() * 3.14) - 1.57;
-            const pitch = (Math.random() * 0.4) - 0.2;
-            bot.look(yaw, pitch, true);
-          }
-        }, 30000);
+function createBot(username) {
+  const bot = mineflayer.createBot({
+    host: serverHost,
+    port: serverPort,
+    username: username,
+    version: false // 自動偵測版本
+  });
 
-        // 每 45 秒切換一次蹲下狀態，模擬真人操作
-        setInterval(() => {
-          bot.setControlState('sneak', true);
-          setTimeout(() => bot.setControlState('sneak', false), 800);
-        }, 45000);
-      });
+  bot.on('spawn', () => {
+    console.log(`[${username}] 已成功進場！`);
+  });
 
-      bot.on('end', (reason) => {
-        console.log(`[${botName}] 連線中斷:`, reason, '5秒後重連...');
-        setTimeout(start, 5000);
-      });
+  bot.on('chat', (username_sender, message) => {
+    if (username_sender === bot.username) return;
+    console.log(`[${username_sender}]: ${message}`);
+  });
 
-      bot.on('error', err => console.log(`[${botName}] 錯誤:`, err));
-    }
-    start();
-  }, delay);
+  bot.on('error', (err) => {
+    console.log(`[${username}] 發生錯誤:`, err.message);
+  });
+
+  bot.on('end', (reason) => {
+    console.log(`[${username}] 斷線 (${reason})，10 秒後重新連線...`);
+    setTimeout(() => createBot(username), 10000);
+  });
 }
 
-// 啟動機器人（若只有一隻只保留第一行即可）
-createBot('IronFarm_Bot', 0);
-// createBot('AFK_Bot_2', 5000);
+// 依次啟動每一個機器人（間隔 5 秒，避免同時進入被 Aternos 擋掉）
+botNames.forEach((name, index) => {
+  setTimeout(() => {
+    console.log(`正在啟動 ${name}...`);
+    createBot(name);
+  }, index * 5000); 
+});
