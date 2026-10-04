@@ -13,22 +13,11 @@ function createBot(username, delay) {
         port: serverPort,
         username: username,
         auth: 'offline',
-        version: '1.21' // 強制指定 1.21 版本 protocol
+        version: false
       });
 
       bot.once('spawn', () => {
         console.log(`🟢 [${username}] 已成功進入伺服器！`);
-      });
-
-      // 關鍵修復：針對 Purpur 1.21 強制每 tick (50ms) 發送一次 client_tick_end 封包
-      bot.on('physicsTick', () => {
-        if (bot._client && bot._client.write) {
-          try {
-            bot._client.write('client_tick_end', {});
-          } catch (e) {
-            // 忽略封包發送失敗
-          }
-        }
       });
 
       bot.on('kicked', (reason) => {
@@ -50,6 +39,6 @@ function createBot(username, delay) {
   }, delay);
 }
 
-// 啟動兩隻機器人
+// 啟動兩隻機器人（間隔 10 秒）
 createBot('AFK_Bot_1', 0);
 createBot('AFK_Bot_2', 10000);
