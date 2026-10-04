@@ -1,43 +1,53 @@
 const mineflayer = require('mineflayer');
 
-// 定義伺服器資訊
 const serverHost = 'baystellardynasty.aternos.me';
 const serverPort = 45295;
 
-// 要啟動的機器人名稱清單
+// 要啟動的機器人名稱
 const botNames = ['AFK_Bot_1', 'AFK_Bot_2'];
 
-function createBot(username) {
+function startBot(username) {
+  console.log(`[${username}] 正在嘗試連線...`);
+
   const bot = mineflayer.createBot({
     host: serverHost,
     port: serverPort,
     username: username,
-    version: false // 自動偵測版本
+    auth: 'offline', // 強制使用離線模式認證
+    version: false,  // 自動匹配伺服器版本
   });
 
-  bot.on('spawn', () => {
-    console.log(`[${username}] 已成功進場！`);
+  // 成功進場
+  bot.once('spawn', () => {
+    console.log(`🟢 [${username}] 已成功進入伺服器！`);
   });
 
-  bot.on('chat', (username_sender, message) => {
-    if (username_sender === bot.username) return;
-    console.log(`[${username_sender}]: ${message}`);
+  // 顯示被踢出的原因
+  bot.on('kicked', (reason) => {
+    console.log(`⚠️ [${username}] 被伺服器踢出，原因:`, reason);
   });
 
+  // 發生錯誤
   bot.on('error', (err) => {
-    console.log(`[${username}] 發生錯誤:`, err.message);
+    console.log(`❌ [${username}] 發生錯誤:`, err.message);
   });
 
-  bot.on('end', (reason) => {
-    console.log(`[${username}] 斷線 (${reason})，10 秒後重新連線...`);
-    setTimeout(() => createBot(username), 10000);
+  // 斷線處理（加上防止重複重連的機制）
+  bot.once('end', (reason) => {
+    console.log(`🔴 [${username}] 已斷線 (${reason})。等待 15 秒後重新連線...`);
+    // 清除舊的事件監聽，避免記憶體洩漏與重複重連
+    bot.removeAllListeners();
+    
+    // 延遲 15 秒再重新連線，避開 Aternos 的防刷限制
+    setTimeout(() => {
+      startBot(username);
+    }, 15000);
   });
 }
 
-// 依次啟動每一個機器人（間隔 5 秒，避免同時進入被 Aternos 擋掉）
+// 依次啟動機器人，中間間隔 10 秒（避免觸發 Aternos 防刷保護）
 botNames.forEach((name, index) => {
   setTimeout(() => {
-    console.log(`正在啟動 ${name}...`);
-    createBot(name);
-  }, index * 5000); 
+    startBot(name);
+  }, index * 10000);
 });
