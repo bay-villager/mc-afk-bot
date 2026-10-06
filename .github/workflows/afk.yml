@@ -1,9 +1,9 @@
 name: 24/7 AFK Bot (MCC)
 
 on:
-  workflow_dispatch: # 支援手動按下 Run workflow 啟動
+  workflow_dispatch:
   schedule:
-    - cron: '0 */5 * * *' # 每 5 小時自動重新啟動，防止 GitHub Actions 超時斷線
+    - cron: '0 */5 * * *'
 
 jobs:
   run-mcc-bots:
@@ -11,7 +11,14 @@ jobs:
     steps:
       - name: 下載 Minecraft Console Client (MCC)
         run: |
-          wget https://github.com/MC-State/Minecraft-Console-Client/releases/latest/download/MinecraftClient-Linux-x64
+          # 自動從 GitHub Release 抓取最新的 Linux x64 可執行檔
+          URL=$(curl -s https://api.github.com/repos/MC-State/Minecraft-Console-Client/releases/latest | grep "browser_download_url.*Linux-x64" | cut -d : -f 2,3 | tr -d \")
+          if [ -z "$URL" ]; then
+            # 若無特定命名，則備用抓取第一個 Linux 壓縮包或檔案
+            URL=$(curl -s https://api.github.com/repos/MC-State/Minecraft-Console-Client/releases/latest | grep "browser_download_url" | head -n 1 | cut -d : -f 2,3 | tr -d \")
+          fi
+          echo "Downloading from $URL..."
+          wget -O MinecraftClient-Linux-x64 "$URL"
           chmod +x MinecraftClient-Linux-x64
 
       - name: 建立 AFK_Bot_1 設定檔
@@ -52,7 +59,6 @@ jobs:
           sleep 10
           
           echo "正在啟動 AFK_Bot_2..."
-          ./MinecraftClient-Linux-x64 bot1.ini bot2.ini &
+          ./MinecraftClient-Linux-x64 bot2.ini &
           
-          # 保持背景工作持續運作
           wait
