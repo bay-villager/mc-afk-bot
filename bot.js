@@ -18,6 +18,8 @@ function createBot(username, delay) {
 
       bot.once('spawn', () => {
         console.log(`🟢 [${username}] 已成功進入伺服器！`);
+        // 關閉物理模擬，停止 mineflayer 自動發送座標封包
+        bot.physicsEnabled = false;
       });
 
       bot.on('kicked', (reason) => {
@@ -39,6 +41,5 @@ function createBot(username, delay) {
   }, delay);
 }
 
-// 啟動兩隻機器人（間隔 10 秒）
 createBot('AFK_Bot_1', 0);
 createBot('AFK_Bot_2', 10000);
