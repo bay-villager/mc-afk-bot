@@ -18,8 +18,16 @@ function createBot(username, delay) {
 
       bot.once('spawn', () => {
         console.log(`🟢 [${username}] 已成功進入伺服器！`);
-        // 關閉物理模擬，停止 mineflayer 自動發送座標封包
-        bot.physicsEnabled = false;
+        
+        // 保持預設物理運算以發送標準位置封包
+        bot.physicsEnabled = true;
+
+        // 每隔 3 秒進行極微小的視角微調，確保伺服器收到穩定的客戶端封包
+        setInterval(() => {
+          if (bot && bot.entity) {
+            bot.look(bot.entity.yaw + 0.0001, bot.entity.pitch, false);
+          }
+        }, 3000);
       });
 
       bot.on('kicked', (reason) => {
