@@ -1,4 +1,4 @@
-name: 24/7 AFK Bot (Native)
+name: 24/7 AFK Bot (MCC Auto-Build)
 
 on:
   workflow_dispatch:
@@ -6,47 +6,57 @@ on:
     - cron: '0 */5 * * *'
 
 jobs:
-  run-afk-bots:
+  run-mcc-bots:
     runs-on: ubuntu-latest
     steps:
-      - name: 建立 AFK 保持連線腳本
+      - name: 設定 .NET 環境並複製 MCC 源碼
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 下載 MCC 原始碼與編譯
         run: |
-          cat <<'EOF' > raw_bot.js
-          const net = require('net');
+          git clone --depth 1 https://github.com/MC-State/Minecraft-Console-Client.git mcc
+          cd mcc/MinecraftClient
+          dotnet build -c Release
 
-          const HOST = 'baystellardynasty.aternos.me';
-          const PORT = 45295;
+      - name: 建立 AFK_Bot_1 與 AFK_Bot_2 設定檔
+        run: |
+          cat <<'EOF' > mcc/MinecraftClient/bin/Release/net8.0/bot1.ini
+          [Main]
+          ServerIP=baystellardynasty.aternos.me:45295
+          Username=AFK_Bot_1
+          Version=26.3
+          ScriptEnabled=false
 
-          function connectBot(username, delay) {
-            setTimeout(() => {
-              function start() {
-                console.log(`[${username}] 正在連接至 ${HOST}:${PORT}...`);
-                const client = new net.Socket();
-
-                client.connect(PORT, HOST, () => {
-                  console.log(`🟢 [${username}] 已建立 TCP 伺服器連線 (AFK 保持中)`);
-                });
-
-                client.on('data', (data) => {
-                  // 維持 Socket 接收通訊數據，不處理實體位移與物理碰撞
-                });
-
-                client.on('error', (err) => {
-                  console.log(`❌ [${username}] 連線錯誤:`, err.message);
-                });
-
-                client.on('close', () => {
-                  console.log(`🔴 [${username}] 連線中斷，10 秒後自動重連...`);
-                  setTimeout(start, 10000);
-                });
-              }
-              start();
-            }, delay);
-          }
-
-          connectBot('AFK_Bot_1', 0);
-          connectBot('AFK_Bot_2', 5000);
+          [AppConfig]
+          AutoRespawn=true
+          ReconnectOnDisconnect=true
+          ReconnectInterval=10
           EOF
 
-      - name: 執行 AFK 保持連線腳本
-        run: node raw_bot.js
+          cat <<'EOF' > mcc/MinecraftClient/bin/Release/net8.0/bot2.ini
+          [Main]
+          ServerIP=baystellardynasty.aternos.me:45295
+          Username=AFK_Bot_2
+          Version=26.3
+          ScriptEnabled=false
+
+          [AppConfig]
+          AutoRespawn=true
+          ReconnectOnDisconnect=true
+          ReconnectInterval=10
+          EOF
+
+      - name: 啟動兩隻 AFK 機器人
+        run: |
+          cd mcc/MinecraftClient/bin/Release/net8.0
+          echo "正在啟動 AFK_Bot_1..."
+          ./MinecraftClient bot1.ini &
+          
+          sleep 10
+          
+          echo "正在啟動 AFK_Bot_2..."
+          ./MinecraftClient bot2.ini &
+          
+          wait
