@@ -1,4 +1,4 @@
-name: 24/7 AFK Bot (In-Game Real Player)
+name: 24/7 AFK Bot (Lightweight Real Player)
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ jobs:
           npm init -y
           npm install mineflayer
 
-      - name: 建立 AFK Bot 腳本
+      - name: 建立極簡輕量 AFK Bot 腳本
         run: |
           cat <<'EOF' > real_bot.js
           const mineflayer = require('mineflayer');
@@ -29,24 +29,17 @@ jobs:
               host: HOST,
               port: PORT,
               username: username,
-              version: false, // 自動匹配 26.3/ViaVersion 協定
+              version: false,
+              loadInternalPlugins: false, // 停用內部不必要的插件以避免區塊解析錯誤
               checkTimeoutInterval: 60 * 1000
             });
 
-            // 關閉物理運動，徹底避免 26.3 的 invalid_player_movement 踢出
-            bot.once('spawn', () => {
-              console.log(`🟢 [${username}] 成功進到遊戲世界中！Aternos 關機倒數已取消。`);
-              if (bot.physics) {
-                bot.physics.enabled = false;
-              }
-            });
+            // 僅保留 KeepAlive 基礎插件，防止協議解析崩潰
+            bot.loadPlugin(require('mineflayer/lib/plugins/keepalive'));
+            bot.loadPlugin(require('mineflayer/lib/plugins/chat'));
 
-            bot.on('chat', (username, message) => {
-              // 收到聊天訊息時回覆，防止被當成假連線
-              if (username === bot.username) return;
-              if (message.includes('ping')) {
-                bot.chat('pong!');
-              }
+            bot.once('spawn', () => {
+              console.log(`🟢 [${username}] 成功穩定掛機在世界中！Aternos 關機倒數已停用。`);
             });
 
             bot.on('error', (err) => {
@@ -54,8 +47,8 @@ jobs:
             });
 
             bot.on('end', (reason) => {
-              console.log(`🔴 [${username}] 已斷開連線 (${reason})，15 秒後重新登入...`);
-              setTimeout(() => createBot(username), 15000);
+              console.log(`🔴 [${username}] 已斷開連線 (${reason})，10 秒後重新登入...`);
+              setTimeout(() => createBot(username), 10000);
             });
           }
 
@@ -63,7 +56,7 @@ jobs:
           createBot('AFK_Bot_1');
           setTimeout(() => {
             createBot('AFK_Bot_2');
-          }, 10000);
+          }, 8000);
           EOF
 
       - name: 執行 AFK 機器人
