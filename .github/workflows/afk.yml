@@ -1,4 +1,4 @@
-name: 24/7 AFK Bot (MCC Auto-Build)
+name: 24/7 AFK Bot (Ping KeepAlive)
 
 on:
   workflow_dispatch:
@@ -6,57 +6,73 @@ on:
     - cron: '0 */5 * * *'
 
 jobs:
-  run-mcc-bots:
+  run-afk-bots:
     runs-on: ubuntu-latest
     steps:
-      - name: 設定 .NET 環境並複製 MCC 源碼
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: 下載 MCC 原始碼與編譯
+      - name: 建立 Minecraft Ping 保持連線腳本
         run: |
-          git clone --depth 1 https://github.com/MC-State/Minecraft-Console-Client.git mcc
-          cd mcc/MinecraftClient
-          dotnet build -c Release
+          cat <<'EOF' > ping_bot.js
+          const net = require('net');
 
-      - name: 建立 AFK_Bot_1 與 AFK_Bot_2 設定檔
-        run: |
-          cat <<'EOF' > mcc/MinecraftClient/bin/Release/net8.0/bot1.ini
-          [Main]
-          ServerIP=baystellardynasty.aternos.me:45295
-          Username=AFK_Bot_1
-          Version=26.3
-          ScriptEnabled=false
+          const HOST = 'baystellardynasty.aternos.me';
+          const PORT = 45295;
 
-          [AppConfig]
-          AutoRespawn=true
-          ReconnectOnDisconnect=true
-          ReconnectInterval=10
+          function createHandshakePacket(host, port) {
+            const hostBuf = Buffer.from(host, 'utf8');
+            const portBuf = Buffer.alloc(2);
+            portBuf.writeUInt16BE(port, 0);
+
+            const handshakeData = Buffer.concat([
+              Buffer.from([0x00]),
+              Buffer.from([0xFF, 0xFF, 0xFF, 0xFF, 0x0F]),
+              Buffer.from([hostBuf.length]),
+              hostBuf,
+              portBuf,
+              Buffer.from([0x01])
+            ]);
+
+            const handshakeLength = Buffer.from([handshakeData.length]);
+            const handshakePacket = Buffer.concat([handshakeLength, handshakeData]);
+            const requestPacket = Buffer.from([0x01, 0x00]);
+
+            return Buffer.concat([handshakePacket, requestPacket]);
+          }
+
+          function startPingKeepAlive(botName, intervalMs) {
+            console.log(`🚀 [${botName}] 心跳保持服務已啟動，每 ${intervalMs / 1000} 秒刷新一次 Aternos 伺服器...`);
+
+            setInterval(() => {
+              const client = new net.Socket();
+              client.setTimeout(5000);
+
+              client.connect(PORT, HOST, () => {
+                const packet = createHandshakePacket(HOST, PORT);
+                client.write(packet);
+              });
+
+              client.on('data', () => {
+                console.log(`🟢 [${botName}] 成功刷新 Aternos 伺服器狀態！(伺服器保持開啟中)`);
+                client.destroy();
+              });
+
+              client.on('error', (err) => {
+                console.log(`⚠️ [${botName}] Ping 失敗 (伺服器可能正在重啟或啟動中):`, err.message);
+              });
+
+              client.on('timeout', () => {
+                client.destroy();
+              });
+
+            }, intervalMs);
+          }
+
+          startPingKeepAlive('AFK_Bot_1', 15000);
+          setTimeout(() => {
+            startPingKeepAlive('AFK_Bot_2', 15000);
+          }, 7500);
+
+          setInterval(() => {}, 100000);
           EOF
 
-          cat <<'EOF' > mcc/MinecraftClient/bin/Release/net8.0/bot2.ini
-          [Main]
-          ServerIP=baystellardynasty.aternos.me:45295
-          Username=AFK_Bot_2
-          Version=26.3
-          ScriptEnabled=false
-
-          [AppConfig]
-          AutoRespawn=true
-          ReconnectOnDisconnect=true
-          ReconnectInterval=10
-          EOF
-
-      - name: 啟動兩隻 AFK 機器人
-        run: |
-          cd mcc/MinecraftClient/bin/Release/net8.0
-          echo "正在啟動 AFK_Bot_1..."
-          ./MinecraftClient bot1.ini &
-          
-          sleep 10
-          
-          echo "正在啟動 AFK_Bot_2..."
-          ./MinecraftClient bot2.ini &
-          
-          wait
+      - name: 執行 Ping AFK 保持連線
+        run: node ping_bot.js
