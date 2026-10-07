@@ -9,18 +9,19 @@ jobs:
   run-mcc-bots:
     runs-on: ubuntu-latest
     steps:
-      - name: 下載 Minecraft Console Client (MCC)
+      - name: 安裝解壓縮工具與下載 MCC
         run: |
-          # 自動從 GitHub Release 抓取最新的 Linux x64 可執行檔
-          URL=$(curl -s https://api.github.com/repos/MC-State/Minecraft-Console-Client/releases/latest | grep "browser_download_url.*Linux-x64" | cut -d : -f 2,3 | tr -d \")
-          if [ -z "$URL" ]; then
-            # 若無特定命名，則備用抓取第一個 Linux 壓縮包或檔案
-            URL=$(curl -s https://api.github.com/repos/MC-State/Minecraft-Console-Client/releases/latest | grep "browser_download_url" | head -n 1 | cut -d : -f 2,3 | tr -d \")
-          fi
-          echo "Downloading from $URL..."
-          wget -O MinecraftClient-Linux-x64 "$URL"
-          chmod +x MinecraftClient-Linux-x64
-
+          sudo apt-get update && sudo apt-get install -y unzip jq
+          
+          # 透過 API 取得最新的 Linux zip 下載網址
+          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/MC-State/Minecraft-Console-Client/releases/latest | jq -r '.assets[] | select(.name | contains("linux")) | .browser_download_url' | head -n 1)
+          
+          echo "正在下載: $DOWNLOAD_URL"
+          curl -L -o mcc.zip "$DOWNLOAD_URL"
+          
+          unzip mcc.zip -d mcc_bin
+          chmod +x mcc_bin/MinecraftClient
+          
       - name: 建立 AFK_Bot_1 設定檔
         run: |
           cat <<'EOF' > bot1.ini
@@ -54,11 +55,11 @@ jobs:
       - name: 同時啟動兩隻 AFK Bot
         run: |
           echo "正在啟動 AFK_Bot_1..."
-          ./MinecraftClient-Linux-x64 bot1.ini &
+          ./mcc_bin/MinecraftClient bot1.ini &
           
           sleep 10
           
           echo "正在啟動 AFK_Bot_2..."
-          ./MinecraftClient-Linux-x64 bot2.ini &
+          ./mcc_bin/MinecraftClient bot2.ini &
           
           wait
