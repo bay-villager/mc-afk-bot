@@ -1,4 +1,4 @@
-name: 24/7 AFK Bot (Ping KeepAlive)
+name: 24/7 AFK Bot (KeepAlive)
 
 on:
   workflow_dispatch:
@@ -9,70 +9,86 @@ jobs:
   run-afk-bots:
     runs-on: ubuntu-latest
     steps:
-      - name: 建立 Minecraft Ping 保持連線腳本
+      - name: 建立 AFK 防關機腳本
         run: |
-          cat <<'EOF' > ping_bot.js
+          cat <<'EOF' > afk_bot.js
           const net = require('net');
 
           const HOST = 'baystellardynasty.aternos.me';
           const PORT = 45295;
 
-          function createHandshakePacket(host, port) {
-            const hostBuf = Buffer.from(host, 'utf8');
-            const portBuf = Buffer.alloc(2);
-            portBuf.writeUInt16BE(port, 0);
-
-            const handshakeData = Buffer.concat([
-              Buffer.from([0x00]),
-              Buffer.from([0xFF, 0xFF, 0xFF, 0xFF, 0x0F]),
-              Buffer.from([hostBuf.length]),
-              hostBuf,
-              portBuf,
-              Buffer.from([0x01])
-            ]);
-
-            const handshakeLength = Buffer.from([handshakeData.length]);
-            const handshakePacket = Buffer.concat([handshakeLength, handshakeData]);
-            const requestPacket = Buffer.from([0x01, 0x00]);
-
-            return Buffer.concat([handshakePacket, requestPacket]);
+          function varInt(val) {
+            const buf = [];
+            while (true) {
+              if ((val & ~0x7F) === 0) {
+                buf.push(val);
+                return Buffer.from(buf);
+              }
+              buf.push((val & 0x7F) | 0x80);
+              val >>>= 7;
+            }
           }
 
-          function startPingKeepAlive(botName, intervalMs) {
-            console.log(`🚀 [${botName}] 心跳保持服務已啟動，每 ${intervalMs / 1000} 秒刷新一次 Aternos 伺服器...`);
+          function sendLogin(username) {
+            const client = new net.Socket();
+            client.setTimeout(8000);
 
-            setInterval(() => {
-              const client = new net.Socket();
-              client.setTimeout(5000);
+            client.connect(PORT, HOST, () => {
+              console.log(`📡 [${username}] 正在向 Aternos 伺服器發送心跳訊號...`);
 
-              client.connect(PORT, HOST, () => {
-                const packet = createHandshakePacket(HOST, PORT);
-                client.write(packet);
-              });
+              // 1. Handshake Packet (Protocol -1, Next State 2 - Login)
+              const hostBuf = Buffer.from(HOST, 'utf8');
+              const portBuf = Buffer.alloc(2);
+              portBuf.writeUInt16BE(PORT, 0);
 
-              client.on('data', () => {
-                console.log(`🟢 [${botName}] 成功刷新 Aternos 伺服器狀態！(伺服器保持開啟中)`);
-                client.destroy();
-              });
+              const handshakeData = Buffer.concat([
+                varInt(0x00), // Packet ID: Handshake
+                varInt(-1),   // Protocol Version (-1 for wildcard)
+                varInt(hostBuf.length),
+                hostBuf,
+                portBuf,
+                varInt(2)     // Next State: Login
+              ]);
 
-              client.on('error', (err) => {
-                console.log(`⚠️ [${botName}] Ping 失敗 (伺服器可能正在重啟或啟動中):`, err.message);
-              });
+              const handshakePacket = Buffer.concat([varInt(handshakeData.length), handshakeData]);
 
-              client.on('timeout', () => {
-                client.destroy();
-              });
+              // 2. Login Start Packet
+              const userBuf = Buffer.from(username, 'utf8');
+              const loginData = Buffer.concat([
+                varInt(0x00), // Packet ID: Login Start
+                varInt(userBuf.length),
+                userBuf
+              ]);
 
-            }, intervalMs);
+              const loginPacket = Buffer.concat([varInt(loginData.length), loginData]);
+
+              // 發送連線封包
+              client.write(Buffer.concat([handshakePacket, loginPacket]));
+            });
+
+            client.on('data', () => {
+              console.log(`🟢 [${username}] 成功與伺服器完成心跳通訊！(伺服器保持開啟中)`);
+              client.destroy();
+            });
+
+            client.on('error', (err) => {
+              console.log(`⚠️ [${username}] 心跳發送異常:`, err.message);
+            });
+
+            client.on('timeout', () => {
+              client.destroy();
+            });
           }
 
-          startPingKeepAlive('AFK_Bot_1', 15000);
+          // 每 20 秒交替發送心跳
+          console.log("🚀 Aternos 24/7 防關機服務已啟動！");
+          setInterval(() => sendLogin('AFK_Bot_1'), 20000);
           setTimeout(() => {
-            startPingKeepAlive('AFK_Bot_2', 15000);
-          }, 7500);
+            setInterval(() => sendLogin('AFK_Bot_2'), 20000);
+          }, 10000);
 
           setInterval(() => {}, 100000);
           EOF
 
-      - name: 執行 Ping AFK 保持連線
-        run: node ping_bot.js
+      - name: 執行 AFK 防關機
+        run: node afk_bot.js
