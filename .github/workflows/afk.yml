@@ -29,18 +29,29 @@ jobs:
               host: HOST,
               port: PORT,
               username: username,
-              version: false,
-              loadInternalPlugins: false, // 停用內部不必要的插件以避免區塊解析錯誤
+              version: false, // 自動配合 ViaVersion 匹配協定
               checkTimeoutInterval: 60 * 1000
             });
 
-            // 僅保留 KeepAlive 基礎插件，防止協議解析崩潰
-            bot.loadPlugin(require('mineflayer/lib/plugins/keepalive'));
-            bot.loadPlugin(require('mineflayer/lib/plugins/chat'));
-
+            // 當機器人順利進入遊戲世界時觸發
             bot.once('spawn', () => {
-              console.log(`🟢 [${username}] 成功穩定掛機在世界中！Aternos 關機倒數已停用。`);
+              console.log(`🟢 [${username}] 成功進到遊戲世界中！Aternos 關機倒數已停用。`);
+              
+              // 1. 停用物理運算，避免 26.3 物理校驗踢出
+              if (bot.physics) {
+                bot.physics.enabled = false;
+              }
+
+              // 2. 忽略世界 Chunk 更新，減少 CPU 與傳輸異常引起的斷線
+              bot._client.on('map_chunk', () => {});
             });
+
+            // 隨機在聊天室發送封包，確保連線活躍
+            setInterval(() => {
+              if (bot && bot.entity) {
+                bot.swingArm('right');
+              }
+            }, 30000);
 
             bot.on('error', (err) => {
               console.log(`⚠️ [${username}] 發生錯誤:`, err.message);
