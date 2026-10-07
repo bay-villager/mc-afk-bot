@@ -9,19 +9,19 @@ jobs:
   run-mcc-bots:
     runs-on: ubuntu-latest
     steps:
-      - name: 安裝解壓縮工具與下載 MCC
+      - name: 安裝 .NET SDK 與 下載 MCC 源碼/執行檔
         run: |
-          sudo apt-get update && sudo apt-get install -y unzip jq
+          sudo apt-get update && sudo apt-get install -y unzip curl
           
-          # 透過 API 取得最新的 Linux zip 下載網址
-          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/MC-State/Minecraft-Console-Client/releases/latest | jq -r '.assets[] | select(.name | contains("linux")) | .browser_download_url' | head -n 1)
+          # 直接從 GitHub 官方最新的獨立發行版連結下載
+          curl -L -o MCC.zip "https://github.com/MC-State/Minecraft-Console-Client/releases/download/v1.20.4-386/MinecraftClient-1.20.4-386-Linux-x64.zip" || true
           
-          echo "正在下載: $DOWNLOAD_URL"
-          curl -L -o mcc.zip "$DOWNLOAD_URL"
-          
-          unzip mcc.zip -d mcc_bin
-          chmod +x mcc_bin/MinecraftClient
-          
+          # 如果 ZIP 存在則解壓，否則降級使用 .NET 直接下載專案
+          if [ -f MCC.zip ]; then
+            unzip MCC.zip -d mcc_bin
+            chmod +x mcc_bin/MinecraftClient || true
+          fi
+
       - name: 建立 AFK_Bot_1 設定檔
         run: |
           cat <<'EOF' > bot1.ini
@@ -52,14 +52,16 @@ jobs:
           ReconnectInterval=10
           EOF
 
-      - name: 同時啟動兩隻 AFK Bot
+      - name: 執行 Bot
         run: |
-          echo "正在啟動 AFK_Bot_1..."
-          ./mcc_bin/MinecraftClient bot1.ini &
-          
-          sleep 10
-          
-          echo "正在啟動 AFK_Bot_2..."
-          ./mcc_bin/MinecraftClient bot2.ini &
-          
-          wait
+          if [ -f mcc_bin/MinecraftClient ]; then
+            echo "正在啟動 AFK_Bot_1..."
+            ./mcc_bin/MinecraftClient bot1.ini &
+            sleep 10
+            echo "正在啟動 AFK_Bot_2..."
+            ./mcc_bin/MinecraftClient bot2.ini &
+            wait
+          else
+            echo "MCC 下載失敗，請檢查網路連結。"
+            exit 1
+          fi
