@@ -1,4 +1,4 @@
-name: 24/7 AFK Bot (KeepAlive)
+name: 24/7 AFK Bot (In-Game Real Player)
 
 on:
   workflow_dispatch:
@@ -9,86 +9,62 @@ jobs:
   run-afk-bots:
     runs-on: ubuntu-latest
     steps:
-      - name: 建立 AFK 防關機腳本
+      - name: 安裝 Node.js 與 Mineflayer
         run: |
-          cat <<'EOF' > afk_bot.js
-          const net = require('net');
+          npm init -y
+          npm install mineflayer
+
+      - name: 建立 AFK Bot 腳本
+        run: |
+          cat <<'EOF' > real_bot.js
+          const mineflayer = require('mineflayer');
 
           const HOST = 'baystellardynasty.aternos.me';
           const PORT = 45295;
 
-          function varInt(val) {
-            const buf = [];
-            while (true) {
-              if ((val & ~0x7F) === 0) {
-                buf.push(val);
-                return Buffer.from(buf);
+          function createBot(username) {
+            console.log(`🤖 [${username}] 正在嘗試登入伺服器...`);
+            
+            const bot = mineflayer.createBot({
+              host: HOST,
+              port: PORT,
+              username: username,
+              version: false, // 自動匹配 26.3/ViaVersion 協定
+              checkTimeoutInterval: 60 * 1000
+            });
+
+            // 關閉物理運動，徹底避免 26.3 的 invalid_player_movement 踢出
+            bot.once('spawn', () => {
+              console.log(`🟢 [${username}] 成功進到遊戲世界中！Aternos 關機倒數已取消。`);
+              if (bot.physics) {
+                bot.physics.enabled = false;
               }
-              buf.push((val & 0x7F) | 0x80);
-              val >>>= 7;
-            }
-          }
-
-          function sendLogin(username) {
-            const client = new net.Socket();
-            client.setTimeout(8000);
-
-            client.connect(PORT, HOST, () => {
-              console.log(`📡 [${username}] 正在向 Aternos 伺服器發送心跳訊號...`);
-
-              // 1. Handshake Packet (Protocol -1, Next State 2 - Login)
-              const hostBuf = Buffer.from(HOST, 'utf8');
-              const portBuf = Buffer.alloc(2);
-              portBuf.writeUInt16BE(PORT, 0);
-
-              const handshakeData = Buffer.concat([
-                varInt(0x00), // Packet ID: Handshake
-                varInt(-1),   // Protocol Version (-1 for wildcard)
-                varInt(hostBuf.length),
-                hostBuf,
-                portBuf,
-                varInt(2)     // Next State: Login
-              ]);
-
-              const handshakePacket = Buffer.concat([varInt(handshakeData.length), handshakeData]);
-
-              // 2. Login Start Packet
-              const userBuf = Buffer.from(username, 'utf8');
-              const loginData = Buffer.concat([
-                varInt(0x00), // Packet ID: Login Start
-                varInt(userBuf.length),
-                userBuf
-              ]);
-
-              const loginPacket = Buffer.concat([varInt(loginData.length), loginData]);
-
-              // 發送連線封包
-              client.write(Buffer.concat([handshakePacket, loginPacket]));
             });
 
-            client.on('data', () => {
-              console.log(`🟢 [${username}] 成功與伺服器完成心跳通訊！(伺服器保持開啟中)`);
-              client.destroy();
+            bot.on('chat', (username, message) => {
+              // 收到聊天訊息時回覆，防止被當成假連線
+              if (username === bot.username) return;
+              if (message.includes('ping')) {
+                bot.chat('pong!');
+              }
             });
 
-            client.on('error', (err) => {
-              console.log(`⚠️ [${username}] 心跳發送異常:`, err.message);
+            bot.on('error', (err) => {
+              console.log(`⚠️ [${username}] 發生錯誤:`, err.message);
             });
 
-            client.on('timeout', () => {
-              client.destroy();
+            bot.on('end', (reason) => {
+              console.log(`🔴 [${username}] 已斷開連線 (${reason})，15 秒後重新登入...`);
+              setTimeout(() => createBot(username), 15000);
             });
           }
 
-          // 每 20 秒交替發送心跳
-          console.log("🚀 Aternos 24/7 防關機服務已啟動！");
-          setInterval(() => sendLogin('AFK_Bot_1'), 20000);
+          // 啟動 AFK 機器人
+          createBot('AFK_Bot_1');
           setTimeout(() => {
-            setInterval(() => sendLogin('AFK_Bot_2'), 20000);
+            createBot('AFK_Bot_2');
           }, 10000);
-
-          setInterval(() => {}, 100000);
           EOF
 
-      - name: 執行 AFK 防關機
-        run: node afk_bot.js
+      - name: 執行 AFK 機器人
+        run: node real_bot.js
