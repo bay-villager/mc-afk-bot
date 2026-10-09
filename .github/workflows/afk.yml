@@ -23,31 +23,30 @@ jobs:
 
           chmod +x MinecraftClient
 
-      - name: 生成 MCC 預設設定檔 (MinecraftClient.ini)
+      - name: 生成新版 MCC TOML 設定檔 (MinecraftClient.ini)
         run: |
           cat <<'EOF' > MinecraftClient.ini
           [Main]
-          # Aternos 伺服器位置與連接埠
-          serverip=baystellardynasty.aternos.me:45295
-          type=offline
-          username=AFK_Bot_1
-          version=1.20.1
+          # 新版 TOML 規範：所有字串都必須加上雙引號 ""
+          ServerIP = "baystellardynasty.aternos.me:45295"
+          Username = "AFK_Bot_1"
+          Type = "offline"
+          Version = "1.20.1"
 
           [AppVars]
-          showlinks=false
+          ShowLinks = false
 
           [AutoAFK]
-          enabled=true
-          delay=10
-          command=/ping
+          Enabled = true
+          Delay = 10
+          Command = "/ping"
 
           [ReconnectionService]
-          enabled=true
-          delay=10
-          interval=300
+          Enabled = true
+          Delay = 10
+          Interval = 300
           EOF
 
       - name: 啟動 MCC 專用掛機機器人
         run: |
-          # 不帶任何額外參數，直接讀取預設的 MinecraftClient.ini
           ./MinecraftClient
