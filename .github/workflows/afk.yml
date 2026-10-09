@@ -1,4 +1,4 @@
-name: 24/7 AFK Bot (Lightweight Real Player)
+name: 24/7 AFK Bot (MCC C# Client)
 
 on:
   workflow_dispatch:
@@ -6,69 +6,25 @@ on:
     - cron: '0 */5 * * *'
 
 jobs:
-  run-afk-bots:
+  run-mcc-afk:
     runs-on: ubuntu-latest
     steps:
-      - name: 安裝 Node.js 與 Mineflayer
+      - name: 檢出儲存庫專案
+        uses: actions/checkout@v3
+
+      - name: 下載並設定 Minecraft Console Client (MCC)
         run: |
-          npm init -y
-          npm install mineflayer
+          # 下載 MCC 最新 Linux x64 單一可執行檔
+          curl -s https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest \
+          | grep "browser_download_url.*MinecraftClient.*linux-x64" \
+          | cut -d : -f 2,3 \
+          | tr -d \" \
+          | wget -qi - -O MinecraftClient
 
-      - name: 建立極簡輕量 AFK Bot 腳本
+          # 賦予執行權限
+          chmod +x MinecraftClient
+
+      - name: 啟動 MCC 專用掛機機器人
         run: |
-          cat <<'EOF' > real_bot.js
-          const mineflayer = require('mineflayer');
-
-          const HOST = 'baystellardynasty.aternos.me';
-          const PORT = 45295;
-
-          function createBot(username) {
-            console.log(`🤖 [${username}] 正在嘗試登入伺服器...`);
-            
-            const bot = mineflayer.createBot({
-              host: HOST,
-              port: PORT,
-              username: username,
-              version: false, // 自動配合 ViaVersion 匹配協定
-              checkTimeoutInterval: 60 * 1000
-            });
-
-            // 當機器人順利進入遊戲世界時觸發
-            bot.once('spawn', () => {
-              console.log(`🟢 [${username}] 成功進到遊戲世界中！Aternos 關機倒數已停用。`);
-              
-              // 1. 停用物理運算，避免 26.3 物理校驗踢出
-              if (bot.physics) {
-                bot.physics.enabled = false;
-              }
-
-              // 2. 忽略世界 Chunk 更新，減少 CPU 與傳輸異常引起的斷線
-              bot._client.on('map_chunk', () => {});
-            });
-
-            // 隨機在聊天室發送封包，確保連線活躍
-            setInterval(() => {
-              if (bot && bot.entity) {
-                bot.swingArm('right');
-              }
-            }, 30000);
-
-            bot.on('error', (err) => {
-              console.log(`⚠️ [${username}] 發生錯誤:`, err.message);
-            });
-
-            bot.on('end', (reason) => {
-              console.log(`🔴 [${username}] 已斷開連線 (${reason})，10 秒後重新登入...`);
-              setTimeout(() => createBot(username), 10000);
-            });
-          }
-
-          // 啟動 AFK 機器人
-          createBot('AFK_Bot_1');
-          setTimeout(() => {
-            createBot('AFK_Bot_2');
-          }, 8000);
-          EOF
-
-      - name: 執行 AFK 機器人
-        run: node real_bot.js
+          # 帶入 mcc.ini 參數背景與前台常駐執行
+          ./MinecraftClient AFK_Bot_1 - mcc.ini
