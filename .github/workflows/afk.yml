@@ -14,17 +14,40 @@ jobs:
 
       - name: 下載並設定 Minecraft Console Client (MCC)
         run: |
-          # 下載 MCC 最新 Linux x64 單一可執行檔
+          # 下載 MCC 最新 Linux x64 執行檔
           curl -s https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest \
           | grep "browser_download_url.*MinecraftClient.*linux-x64" \
           | cut -d : -f 2,3 \
           | tr -d \" \
           | wget -qi - -O MinecraftClient
 
-          # 賦予執行權限
           chmod +x MinecraftClient
+
+      - name: 生成專用 MCC 設定檔
+        run: |
+          cat <<'EOF' > mcc.ini
+          [Main]
+          # 伺服器與 Port 拆開寫
+          serverip=baystellardynasty.aternos.me
+          port=45295
+          type=offline
+          username=AFK_Bot_1
+          version=1.20.1
+
+          [AppVars]
+          showlinks=false
+
+          [AutoAFK]
+          enabled=true
+          delay=10
+          command=/ping
+
+          [ReconnectionService]
+          enabled=true
+          delay=10
+          interval=300
+          EOF
 
       - name: 啟動 MCC 專用掛機機器人
         run: |
-          # 帶入 mcc.ini 參數背景與前台常駐執行
           ./MinecraftClient AFK_Bot_1 - mcc.ini
