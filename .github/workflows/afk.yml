@@ -23,13 +23,12 @@ jobs:
 
           chmod +x MinecraftClient
 
-      - name: 生成專用 MCC 設定檔
+      - name: 生成 MCC 預設設定檔 (MinecraftClient.ini)
         run: |
-          cat <<'EOF' > mcc.ini
+          cat <<'EOF' > MinecraftClient.ini
           [Main]
-          # 伺服器與 Port 拆開寫
-          serverip=baystellardynasty.aternos.me
-          port=45295
+          # Aternos 伺服器位置與連接埠
+          serverip=baystellardynasty.aternos.me:45295
           type=offline
           username=AFK_Bot_1
           version=1.20.1
@@ -50,4 +49,5 @@ jobs:
 
       - name: 啟動 MCC 專用掛機機器人
         run: |
-          ./MinecraftClient AFK_Bot_1 - mcc.ini
+          # 不帶任何額外參數，直接讀取預設的 MinecraftClient.ini
+          ./MinecraftClient
