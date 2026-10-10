@@ -1,26 +1,28 @@
-[Main]
-# 伺服器 IP 與 Port
-ip=baystellardynasty.aternos.me:45295
+- name: 生成 MCC 設定檔 (MinecraftClient.toml)
+        run: |
+          cat << 'EOF' > MinecraftClient.toml
+[main]
+ip = "baystellardynasty.aternos.me:45295"
+login = "offline"
+username = "AFK_Bot_1"
 
-# 登入類型（可選: offline, microsoft, yggdrasil）
-accounttype=offline
+[appvars]
+showlinks = false
 
-# 你的玩家名稱
-username=AFK_Bot_1
+[autoafk]
+enabled = true
+delay = 10
+command = "/ping"
 
-# 密碼（離線模式可留空）
-password=-
-[AppVars]
-# 停用不必要的模組以節省效能
-showlinks=false
+[reconnectionservice]
+enabled = true
+delay = 10
+interval = 300
+EOF
 
-[AutoAFK]
-enabled=true
-delay=10
-# 防踢防閒置命令（自動在遊戲內發送指令或動作）
-command=/ping
+      - name: 印出並確認設定檔
+        run: cat MinecraftClient.toml
 
-[ReconnectionService]
-enabled=true
-delay=10
-interval=300
+      - name: 啟動 MCC 專用掛機機器人
+        run: |
+          ./MinecraftClient
