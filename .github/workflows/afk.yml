@@ -22,10 +22,6 @@ jobs:
 
           chmod +x MinecraftClient
 
-      - name: 強制建立正確設定檔
+      - name: 自動回應選單並啟動掛機機器人
         run: |
-          printf '[main]\nip = "baystellardynasty.aternos.me:45295"\nlogin = "offline"\nusername = "AFK_Bot_1"\n\n[appvars]\nshowlinks = false\n\n[autoafk]\nenabled = true\ndelay = 10\ncommand = "/ping"\n\n[reconnectionservice]\nenabled = true\ndelay = 10\ninterval = 300\n' > MinecraftClient.ini
-
-      - name: 啟動 MCC 專用掛機機器人（自動輸入 1 與 ID 作為備案）
-        run: |
-          printf "1\nAFK_Bot_1\n" | ./MinecraftClient
+          printf "1\nAFK_Bot_1\n\nbaystellardynasty.aternos.me:45295\n" | ./MinecraftClient
