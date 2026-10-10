@@ -1,21 +1,21 @@
 - name: 生成 MCC TOML 設定檔 (MinecraftClient.ini)
         run: |
           cat << 'EOF' > MinecraftClient.ini
-          [main]
-          ip = "baystellardynasty.aternos.me:45295"
-          login = "offline"
-          username = "AFK_Bot_1"
+[main]
+ip = "baystellardynasty.aternos.me:45295"
+login = "offline"
+username = "AFK_Bot_1"
 
-          [appvars]
-          showlinks = false
+[appvars]
+showlinks = false
 
-          [autoafk]
-          enabled = true
-          delay = 10
-          command = "/ping"
+[autoafk]
+enabled = true
+delay = 10
+command = "/ping"
 
-          [reconnectionservice]
-          enabled = true
-          delay = 10
-          interval = 300
-          EOF
+[reconnectionservice]
+enabled = true
+delay = 10
+interval = 300
+EOF
