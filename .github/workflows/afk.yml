@@ -24,4 +24,4 @@ jobs:
 
       - name: 啟動 MCC 專用掛機機器人
         run: |
-          ./MinecraftClient AFK_Bot_1 - baystellardynasty.aternos.me:45295
+          ./MinecraftClient AFK_Bot_1 - baystellardynasty.aternos.me 45295
