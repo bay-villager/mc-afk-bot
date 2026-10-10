@@ -22,6 +22,6 @@ jobs:
 
           chmod +x MinecraftClient
 
-      - name: 自動回應選單並啟動掛機機器人
+      - name: 啟動 MCC 專用掛機機器人
         run: |
-          printf "1\nAFK_Bot_1\n\nbaystellardynasty.aternos.me:45295\n" | ./MinecraftClient
+          ./MinecraftClient AFK_Bot_1 - baystellardynasty.aternos.me:45295
