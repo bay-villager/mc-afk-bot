@@ -1,21 +1,50 @@
-- name: 生成 MCC TOML 設定檔 (MinecraftClient.ini)
+name: 24/7 AFK Bot (MCC C# Client)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */5 * * *'
+
+jobs:
+  run-mcc-afk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 檢出儲存庫專案
+        uses: actions/checkout@v3
+
+      - name: 下載並設定 Minecraft Console Client (MCC)
+        run: |
+          curl -s https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest \
+          | grep "browser_download_url.*MinecraftClient.*linux-x64" \
+          | cut -d : -f 2,3 \
+          | tr -d \" \
+          | wget -qi - -O MinecraftClient
+
+          chmod +x MinecraftClient
+
+      - name: 生成 MCC TOML 設定檔 (MinecraftClient.ini)
         run: |
           cat << 'EOF' > MinecraftClient.ini
-[main]
-ip = "baystellardynasty.aternos.me:45295"
-login = "offline"
-username = "AFK_Bot_1"
+          [main]
+          ip = "baystellardynasty.aternos.me:45295"
+          login = "offline"
+          username = "AFK_Bot_1"
 
-[appvars]
-showlinks = false
+          [appvars]
+          showlinks = false
 
-[autoafk]
-enabled = true
-delay = 10
-command = "/ping"
+          [autoafk]
+          enabled = true
+          delay = 10
+          command = "/ping"
 
-[reconnectionservice]
-enabled = true
-delay = 10
-interval = 300
-EOF
+          [reconnectionservice]
+          enabled = true
+          delay = 10
+          interval = 300
+          EOF
+          sed -i 's/^[ \t]*//' MinecraftClient.ini
+
+      - name: 啟動 MCC 專用掛機機器人
+        run: |
+          ./MinecraftClient
