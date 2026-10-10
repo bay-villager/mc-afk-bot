@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 檢出儲存庫專案
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 下載並設定 Minecraft Console Client (MCC)
         run: |
@@ -22,29 +22,10 @@ jobs:
 
           chmod +x MinecraftClient
 
-      - name: 生成 MCC TOML 設定檔 (MinecraftClient.ini)
+      - name: 強制建立正確設定檔
         run: |
-          echo '[main]' > MinecraftClient.ini
-          echo 'ip = "baystellardynasty.aternos.me:45295"' >> MinecraftClient.ini
-          echo 'login = "offline"' >> MinecraftClient.ini
-          echo 'username = "AFK_Bot_1"' >> MinecraftClient.ini
-          echo '' >> MinecraftClient.ini
-          echo '[appvars]' >> MinecraftClient.ini
-          echo 'showlinks = false' >> MinecraftClient.ini
-          echo '' >> MinecraftClient.ini
-          echo '[autoafk]' >> MinecraftClient.ini
-          echo 'enabled = true' >> MinecraftClient.ini
-          echo 'delay = 10' >> MinecraftClient.ini
-          echo 'command = "/ping"' >> MinecraftClient.ini
-          echo '' >> MinecraftClient.ini
-          echo '[reconnectionservice]' >> MinecraftClient.ini
-          echo 'enabled = true' >> MinecraftClient.ini
-          echo 'delay = 10' >> MinecraftClient.ini
-          echo 'interval = 300' >> MinecraftClient.ini
+          printf '[main]\nip = "baystellardynasty.aternos.me:45295"\nlogin = "offline"\nusername = "AFK_Bot_1"\n\n[appvars]\nshowlinks = false\n\n[autoafk]\nenabled = true\ndelay = 10\ncommand = "/ping"\n\n[reconnectionservice]\nenabled = true\ndelay = 10\ninterval = 300\n' > MinecraftClient.ini
 
-          # 檢查生成的設定檔內容
-          cat MinecraftClient.ini
-
-      - name: 啟動 MCC 專用掛機機器人
+      - name: 啟動 MCC 專用掛機機器人（自動輸入 1 與 ID 作為備案）
         run: |
-          ./MinecraftClient
+          printf "1\nAFK_Bot_1\n" | ./MinecraftClient
