@@ -1,27 +1,36 @@
-name: 24/7 AFK Bot (MCC C# Client)
+name: 24-7 AFK Bot
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 */5 * * *'
 
 jobs:
-  run-mcc-afk:
+  afk:
     runs-on: ubuntu-latest
     steps:
-      - name: 檢出儲存庫專案
-        uses: actions/checkout@v4
-
-      - name: 下載並設定 Minecraft Console Client (MCC)
+      - name: 下載並設定 Minecraft Console Client
         run: |
-          curl -s https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest \
-          | grep "browser_download_url.*MinecraftClient.*linux-x64" \
-          | cut -d : -f 2,3 \
-          | tr -d \" \
-          | wget -qi - -O MinecraftClient
-
+          curl -s https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest | grep "browser_download_url.*MinecraftClient.*linux-x64" | cut -d : -f 2,3 | tr -d \" | wget -qi - -O MinecraftClient
           chmod +x MinecraftClient
+
+          # 強制生成設定檔，關閉 Ping 檢查並啟用自動重連
+          cat << 'EOF' > MinecraftClient.ini
+          [Main]
+          general=true
+          serverip=soldierfish.aternos.host:45295
+          
+          [AppConfig]
+          EnableSentry=false
+
+          [AntiAFK]
+          enabled=true
+          delay=60
+          
+          [AutoRelog]
+          enabled=true
+          delay=10
+          retries=10
+          EOF
 
       - name: 啟動 MCC 專用掛機機器人
         run: |
-          ./MinecraftClient AFK_Bot_1 - 185.107.193.130 45295
+          ./MinecraftClient AFK_Bot_1 - soldierfish.aternos.host:45295
