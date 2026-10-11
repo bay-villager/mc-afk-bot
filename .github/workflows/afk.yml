@@ -12,25 +12,6 @@ jobs:
           curl -s https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest | grep "browser_download_url.*MinecraftClient.*linux-x64" | cut -d : -f 2,3 | tr -d \" | wget -qi - -O MinecraftClient
           chmod +x MinecraftClient
 
-          # 強制生成設定檔，關閉 Ping 檢查並啟用自動重連
-          cat << 'EOF' > MinecraftClient.ini
-          [Main]
-          general=true
-          serverip=soldierfish.aternos.host:45295
-          
-          [AppConfig]
-          EnableSentry=false
-
-          [AntiAFK]
-          enabled=true
-          delay=60
-          
-          [AutoRelog]
-          enabled=true
-          delay=10
-          retries=10
-          EOF
-
       - name: 啟動 MCC 專用掛機機器人
         run: |
-          ./MinecraftClient AFK_Bot_1 - soldierfish.aternos.host:45295
+          ./MinecraftClient AFK_Bot_1 - soldierfish.aternos.host -p 45295
