@@ -17,7 +17,7 @@ jobs:
           cat << 'EOF' > MinecraftClient.ini
           [Main]
           login = "AFK_Bot_1"
-          serverip = "soldierfish.aternos.host:45295"
+          serverip = "affenpinscher.aternos.host:45295"
           accounttype = "offline"
           EOF
 
