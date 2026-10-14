@@ -12,6 +12,20 @@ jobs:
           curl -s https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest | grep "browser_download_url.*MinecraftClient.*linux-x64" | cut -d : -f 2,3 | tr -d \" | wget -qi - -O MinecraftClient
           chmod +x MinecraftClient
 
+      - name: 生成穩定設定檔
+        run: |
+          cat << 'EOF' > MinecraftClient.ini
+          [Main]
+          login=AFK_Bot_1
+          serverip=soldierfish.aternos.host:45295
+          accounttype=Offline
+
+          [AutoRelog]
+          enabled=true
+          delay=10
+          retries=30
+          EOF
+
       - name: 啟動 MCC 專用掛機機器人
         run: |
-          echo "1" | ./MinecraftClient AFK_Bot_1 - soldierfish.aternos.host:45295
+          echo "1" | ./MinecraftClient
