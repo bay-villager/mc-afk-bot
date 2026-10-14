@@ -12,13 +12,13 @@ jobs:
           curl -s https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest | grep "browser_download_url.*MinecraftClient.*linux-x64" | cut -d : -f 2,3 | tr -d \" | wget -qi - -O MinecraftClient
           chmod +x MinecraftClient
 
-      - name: 生成 v26.2 TOML 設定檔
+      - name: 生成 v26.2 正確設定檔
         run: |
           cat << 'EOF' > MinecraftClient.ini
           [Main]
           login = "AFK_Bot_1"
           serverip = "soldierfish.aternos.host:45295"
-          accounttype = "Offline"
+          accounttype = "offline"
           EOF
 
       - name: 啟動 MCC 專用掛機機器人
